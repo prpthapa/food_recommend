@@ -88,12 +88,10 @@ python3 -m venv .venv
 # On Linux/macOS:
 source .venv/bin/activate
 # On Windows:
-# .venv\Scripts\activate
+.venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
-# Alternatively:
-# pip install streamlit pandas numpy scikit-learn
+pip install streamlit pandas numpy scikit-learn
 ```
 
 ---
@@ -127,57 +125,3 @@ http://localhost:8501
 
 ---
 
-## Code Breakdown (`backend/app.py`)
-
-Here is an explanation of the core logic in [`backend/app.py`](backend/app.py):
-
-```python
-import streamlit as st
-import pickle
-import pandas as pd
-
-# Page title
-st.title('Food Recommender System')
-
-# Load dataset and precomputed similarity matrix
-food_dict = pickle.load(open('food_dict.pkl', 'rb'))
-food = pd.DataFrame(food_dict)
-similarity_matrix = pickle.load(open('similarity.pkl', 'rb'))
-
-# Dropdown selection for food items
-selected_food_item = st.selectbox('Select a food item', food['item'].values)
-
-def recommend(selected_food_item):
-    # Find matching index for selected food item (case-insensitive)
-    food_index = food[
-        food["item"].str.lower() == selected_food_item.lower()
-    ].index[0]
-
-    # Retrieve similarity vector for the selected food
-    scores = similarity_matrix[food_index]
-    
-    # Sort by score descending; take top 5 matches excluding index 0 (self)
-    food_list = sorted(list(enumerate(scores)), key=lambda x: x[1], reverse=True)[1:6]
-
-    # Collect recommendations
-    recommend_food = []
-    for i in food_list:
-        recommend_food.append(food.iloc[i[0]]['item'])
-
-    return recommend_food
-
-# Trigger recommendation display on button click
-if st.button('Recommend'):
-    recommendations = recommend(selected_food_item)
-    for item in recommendations:
-        st.write(item)
-```
-
----
-
-## Suggested Improvements
-
-- **Dynamic File Paths:** Use `pathlib.Path(__file__).resolve().parent.parent` to locate `.pkl` files dynamically regardless of current working directory.
-- **Enhanced UI Details:** Display food category, origin, ingredients, and descriptions alongside recommendation names using Streamlit columns (`st.columns`) or cards.
-- **Filtering Options:** Allow users to filter recommendations by cuisine origin (e.g., Nepalese, Indian) or dietary category.
-- **Caching:** Add `@st.cache_data` or `@st.cache_resource` on data loading to improve app responsiveness.
